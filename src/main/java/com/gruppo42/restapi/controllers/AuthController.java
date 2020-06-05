@@ -1,33 +1,42 @@
 package com.gruppo42.restapi.controllers;
 
 import com.gruppo42.restapi.execeptions.AppException;
+import com.gruppo42.restapi.execeptions.BadRequestException;
+import com.gruppo42.restapi.models.PasswordResetToken;
+import com.gruppo42.restapi.models.PasswordResetToken.TokenStatus;
 import com.gruppo42.restapi.models.Role;
 import com.gruppo42.restapi.models.RoleName;
 import com.gruppo42.restapi.models.User;
-import com.gruppo42.restapi.payloads.ApiResponse;
-import com.gruppo42.restapi.payloads.JwtAuthenticationResponse;
-import com.gruppo42.restapi.payloads.LoginRequest;
-import com.gruppo42.restapi.payloads.SignUpRequest;
+import com.gruppo42.restapi.payloads.*;
+import com.gruppo42.restapi.repository.PasswordTokenRepository;
 import com.gruppo42.restapi.repository.RoleRepository;
 import com.gruppo42.restapi.repository.UserRepository;
+import com.gruppo42.restapi.security.CurrentUser;
 import com.gruppo42.restapi.security.JwtTokenProvider;
+import com.gruppo42.restapi.security.UserPrincipal;
+import com.gruppo42.restapi.services.HTMLService;
+import com.gruppo42.restapi.services.PasswordResetService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.Collections;
+import java.util.UUID;
 
 
 @RestController
@@ -36,7 +45,33 @@ import java.util.Collections;
  * Every other classes defined are made to be used by this one.
  *
  */
-public class AuthController {
+public class AuthController
+{
+    /**
+     * For application.properties
+     */
+    @Autowired
+    private Environment env;
+
+    /**
+     * HTML service.
+     * Retrieves templated html pages and returns them filled with custom specified data
+     */
+    @Autowired
+    HTMLService htmlService;
+
+    /**
+     * Password token repository
+     */
+    @Autowired
+    PasswordTokenRepository passwordTokenRepository;
+
+    /**
+     * Password reset service.
+     * Resets password.
+     */
+    @Autowired
+    PasswordResetService passwordResetService;
 
     /**
      * Authentication manager.
@@ -140,4 +175,92 @@ public class AuthController {
         //Returns a URI for the new resource created (the user)
         return ResponseEntity.created(location).body(new ApiResponse(true, "User registered successfully"));
     }
+
+    @PreAuthorize("hasRole('ROLE_USER')")
+    @GetMapping("/newPassword")
+    @Transactional
+    public ApiResponse newPassword(@CurrentUser UserPrincipal currentUser,
+                                   @Valid @RequestBody PasswordChange passwordChange)
+    {
+        ApiResponse response = null;
+        User user = userRepository.findById(currentUser.getId())
+                                .orElseThrow(()->{return new AppException("User not found");});
+        String passHash = passwordEncoder.encode(passwordChange.getOldPassword());
+        if(passwordEncoder.matches(passwordChange.getOldPassword(), user.getPassword()))
+        {
+            user.setPassword(passwordEncoder.encode(passwordChange.getNewPassword()));
+            userRepository.save(user);
+            response = new ApiResponse(true, "password changed");
+        }
+        else
+            response = new ApiResponse(false, "Password does not match");
+        return response;
+    }
+
+    @GetMapping("/changePassword")
+    @Transactional
+    public String changePassword(@RequestParam(value = "token") String token, HttpServletResponse response)
+    {
+        TokenStatus status = passwordResetService.validateToken(token);
+        if(status==TokenStatus.INVALID)
+            throw new BadRequestException("Invalid token");
+        else if(status== TokenStatus.EXPIRED)
+            throw new BadRequestException("Expired token");
+        else
+        {
+            String url = "/api/auth/confirmPassword";
+            Cookie cookie = new Cookie("quarantadue", token);
+            //cookie.setHttpOnly(true);
+            //cookie.setSecure(true);
+            response.addCookie(cookie);
+            return htmlService.getResetHTMLFor(url).toString();
+        }
+    }
+
+    @PostMapping("/confirmPassword")
+    @Transactional
+    public ApiResponse confirmPassword(HttpServletRequest request)
+    {
+        PasswordReset passwordReset = new PasswordReset(request.getParameter("password1"), request.getParameter("password2"));
+        String token = request.getCookies()[0].getValue();
+        ApiResponse apiResponse = new ApiResponse(true, "Password changed.");
+        TokenStatus status = passwordResetService.validateToken(token);
+        System.out.println(token);
+        if(!passwordReset.getPassword1().equals(passwordReset.getPasssword2()))
+            throw  new BadRequestException("Password do not match");
+        if(status==TokenStatus.INVALID)
+            throw new BadRequestException("Invalid token");
+        else if(status== TokenStatus.EXPIRED)
+            throw new BadRequestException("Expired token");
+        else
+        {
+            PasswordResetToken tokenFetch = passwordTokenRepository.findByToken(token).orElseThrow(() ->{
+                    return new BadRequestException("Invalid token");
+            });
+            User user = userRepository.findById(tokenFetch.getUser().getId()).orElseThrow(() ->{
+                return new BadRequestException("User not found");
+            });
+            System.out.println("Saving passs: " + passwordReset.getPassword1());
+            user.setPassword(passwordEncoder.encode(passwordReset.getPassword1()));
+            PasswordResetToken resetToken = passwordTokenRepository.findByToken(token).orElse(null);
+            passwordTokenRepository.delete(resetToken);
+            System.out.println("***********SAVING***********");
+            return apiResponse;
+        }
+    }
+
+    @GetMapping("/resetPassword")
+    @Transactional
+    public ApiResponse resetPassword(@RequestParam(value = "email") String email)
+    {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException("User not found."));
+        String token = UUID.randomUUID().toString();
+        passwordResetService.resetPasswordWithToken(user, token);
+        //IMPORTANT REMOVE BEFORE RELEASE
+        System.out.println("Sent token: {"+token+"}");
+        ApiResponse response = new ApiResponse(true, "An email has been sent to " + email);
+        return response;
+    }
+
 }

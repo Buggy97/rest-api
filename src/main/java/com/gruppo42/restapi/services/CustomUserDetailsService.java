@@ -1,6 +1,8 @@
 package com.gruppo42.restapi.services;
 
+import com.gruppo42.restapi.models.PasswordResetToken;
 import com.gruppo42.restapi.models.User;
+import com.gruppo42.restapi.repository.PasswordTokenRepository;
 import com.gruppo42.restapi.repository.UserRepository;
 import com.gruppo42.restapi.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +28,11 @@ public class CustomUserDetailsService implements UserDetailsService
     retrieve a lazily loaded member, it will cause errors.
      */
 
-
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    PasswordTokenRepository passwordTokenRepository;
 
     @Override
     @Transactional
