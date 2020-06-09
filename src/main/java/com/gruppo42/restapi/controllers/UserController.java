@@ -10,7 +10,6 @@ import com.gruppo42.restapi.repository.MovieRepository;
 import com.gruppo42.restapi.repository.UserRepository;
 import com.gruppo42.restapi.security.CurrentUser;
 import com.gruppo42.restapi.security.UserPrincipal;
-import com.gruppo42.restapi.services.PasswordResetService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Set;
-import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api")

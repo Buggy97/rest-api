@@ -179,10 +179,10 @@ public class AuthController
     @PreAuthorize("hasRole('ROLE_USER')")
     @GetMapping("/newPassword")
     @Transactional
-    public ApiResponse newPassword(@CurrentUser UserPrincipal currentUser,
+    public ResponseEntity<?> newPassword(@CurrentUser UserPrincipal currentUser,
                                    @Valid @RequestBody PasswordChange passwordChange)
     {
-        ApiResponse response = null;
+        ResponseEntity<?> response = null;
         User user = userRepository.findById(currentUser.getId())
                                 .orElseThrow(()->{return new AppException("User not found");});
         String passHash = passwordEncoder.encode(passwordChange.getOldPassword());
@@ -190,10 +190,12 @@ public class AuthController
         {
             user.setPassword(passwordEncoder.encode(passwordChange.getNewPassword()));
             userRepository.save(user);
-            response = new ApiResponse(true, "password changed");
+            response = new ResponseEntity(new ApiResponse(true, "Password changed!"),
+                    HttpStatus.OK);
         }
         else
-            response = new ApiResponse(false, "Password does not match");
+            response = new ResponseEntity(new ApiResponse(false, "Wrong password!"),
+                        HttpStatus.BAD_REQUEST);
         return response;
     }
 
@@ -240,11 +242,9 @@ public class AuthController
             User user = userRepository.findById(tokenFetch.getUser().getId()).orElseThrow(() ->{
                 return new BadRequestException("User not found");
             });
-            System.out.println("Saving passs: " + passwordReset.getPassword1());
             user.setPassword(passwordEncoder.encode(passwordReset.getPassword1()));
             PasswordResetToken resetToken = passwordTokenRepository.findByToken(token).orElse(null);
             passwordTokenRepository.delete(resetToken);
-            System.out.println("***********SAVING***********");
             return apiResponse;
         }
     }
@@ -258,7 +258,6 @@ public class AuthController
         String token = UUID.randomUUID().toString();
         passwordResetService.resetPasswordWithToken(user, token);
         //IMPORTANT REMOVE BEFORE RELEASE
-        System.out.println("Sent token: {"+token+"}");
         ApiResponse response = new ApiResponse(true, "An email has been sent to " + email);
         return response;
     }

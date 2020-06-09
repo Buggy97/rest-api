@@ -2,15 +2,13 @@ package com.gruppo42.restapi.services;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.io.IOUtils;
+
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 @Service
 public class HTMLService
@@ -26,13 +24,11 @@ public class HTMLService
         this.classLoader = getClass().getClassLoader();
         this.emailHTML = new StringBuilder();
         this.passwordResetHTML = new StringBuilder();
-        File emailView = new File(classLoader.getResource("templates/emailView/emailView.html").getFile());
-        File passwordView = new File(classLoader.getResource("templates/resetPasswordView/passwordResetView.html").getFile());
-        try (Stream<String> stream = Files.lines(emailView.toPath(), StandardCharsets.UTF_8);
-             Stream<String> stream2 = Files.lines(passwordView.toPath(), StandardCharsets.UTF_8))
-        {
-            stream.forEach(s -> this.emailHTML.append(s).append("\n"));
-            stream2.forEach(s ->this.passwordResetHTML.append(s).append("\n"));
+        try {
+            emailHTML.append(IOUtils.toString(classLoader.getResourceAsStream("templates/emailView/emailView.html"),
+                                                StandardCharsets.UTF_8));
+            passwordResetHTML.append(IOUtils.toString(classLoader.getResourceAsStream("templates/resetPasswordView/passwordResetView.html"),
+                                                        StandardCharsets.UTF_8));
         } catch (Exception e)
         {
             logger.error("Error while loading templated HTMLs", e);
@@ -53,15 +49,6 @@ public class HTMLService
         m = pattern.matcher(htmlString);
         while(m.find()) {
             htmlString.replace(m.start(), m.end(), resetLink.toString());
-        }
-        try (FileWriter fw = new FileWriter("C:\\Users\\Farjad\\Desktop\\uni\\output.html"))
-        {
-            logger.info("Printing file");
-            fw.append(htmlString);
-            fw.close();
-        } catch (Exception e)
-        {
-            e.printStackTrace();
         }
         return htmlString;
     }
