@@ -87,7 +87,7 @@
           <schemaVersion>V2</schemaVersion>
           <resourceGroup>rest-api</resourceGroup>
           <appName>gruppo42</appName>
-          <pricingTier>F1</pricingTier>
+          <pricingTier>B1</pricingTier>
           <region>francecentral</region>
           <runtime>
             <os>linux</os>

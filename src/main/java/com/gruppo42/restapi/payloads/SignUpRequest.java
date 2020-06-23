@@ -5,12 +5,8 @@ import javax.validation.constraints.*;
 public class SignUpRequest
 {
     @NotBlank
-    @Size(min = 4, max = 100)
+    @Size(min = 3, max = 100)
     private String name;
-
-    @NotBlank
-    @Size(min = 4, max = 100)
-    private String surname;
 
     @NotBlank
     @Size(min = 3, max = 100)
@@ -20,6 +16,8 @@ public class SignUpRequest
     @Size(max = 40)
     @Email
     private String email;
+
+    private String image;
 
     @NotBlank
     @Size(min = 6, max = 32)
@@ -45,10 +43,7 @@ public class SignUpRequest
         this.username = username;
     }
 
-    public String getEmail()
-    {
-        return email;
-    }
+    public String getEmail() { return email; }
 
     public void setEmail(String email)
     {
@@ -62,7 +57,7 @@ public class SignUpRequest
 
     public void setPassword(String password) { this.password = password; }
 
-    public String getSurname() { return surname; }
+    public String getImage() { return image; }
 
-    public void setSurname(String surname) { this.surname = surname; }
+    public void setImage(String image) { this.image = image; }
 }

@@ -111,6 +111,27 @@ public class AuthController
     @Autowired
     JwtTokenProvider tokenProvider;
 
+
+
+    @DeleteMapping("/user/me/delete")
+    @Transactional
+    public ResponseEntity<?> deleteCurrentUser(@RequestBody LoginRequest  login,
+                                               @CurrentUser UserPrincipal currentUser)
+    {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(()->{return new AppException("User not found");});
+        String passHash = passwordEncoder.encode(login.getPassword());
+        if(passwordEncoder.matches(login.getPassword(), user.getPassword()))
+        {
+            userRepository.delete(user);
+            return new ResponseEntity(new ApiResponse(true, "User deleted!"),
+                    HttpStatus.OK);
+        }
+        else
+            return new ResponseEntity(new ApiResponse(false, "Wrong password!"),
+                    HttpStatus.BAD_REQUEST);
+    }
+
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest)
     {
@@ -155,8 +176,8 @@ public class AuthController
         }
 
         // Creating user's account
-        User user = new User(signUpRequest.getName(), signUpRequest.getSurname(), signUpRequest.getUsername(),
-                signUpRequest.getEmail(), signUpRequest.getPassword());
+        User user = new User(signUpRequest.getName(), signUpRequest.getUsername(),
+                signUpRequest.getEmail(), signUpRequest.getPassword(), signUpRequest.getImage());
 
         //The password is stored in a secure way and not in plain
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -173,11 +194,12 @@ public class AuthController
                 .buildAndExpand(result.getUsername()).toUri();
 
         //Returns a URI for the new resource created (the user)
-        return ResponseEntity.created(location).body(new ApiResponse(true, "User registered successfully"));
+        return new ResponseEntity(new ApiResponse(true, "User registered successfully"),
+                                  HttpStatus.OK);
     }
 
     @PreAuthorize("hasRole('ROLE_USER')")
-    @GetMapping("/newPassword")
+    @PostMapping("/newPassword")
     @Transactional
     public ResponseEntity<?> newPassword(@CurrentUser UserPrincipal currentUser,
                                    @Valid @RequestBody PasswordChange passwordChange)

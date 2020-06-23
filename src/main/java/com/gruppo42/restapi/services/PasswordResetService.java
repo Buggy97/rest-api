@@ -55,8 +55,7 @@ public class PasswordResetService
     private void sendResetTokenEmail(String token, User user)
     {
         String url = env.getProperty("app.url_to_use") + "/api/auth/changePassword?token=" + token;
-        ClassLoader classLoader = getClass().getClassLoader();
-        CharSequence htmlString = htmlService.getEmailFor(user.getName(), "www.google.it");
+        CharSequence htmlString = htmlService.getEmailFor(user.getName(), url);
         sendEmailWithAttachment("Resetta password", htmlString, user);
     }
 

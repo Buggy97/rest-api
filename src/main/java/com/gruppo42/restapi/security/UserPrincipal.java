@@ -16,8 +16,6 @@ public class UserPrincipal implements UserDetails
 
     private String name;
 
-    private String surname;
-
     private String username;
 
     @JsonIgnore
@@ -32,17 +30,20 @@ public class UserPrincipal implements UserDetails
     @JsonIgnore
     private String password;
 
+    @JsonIgnore
+    private String image;
+
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserPrincipal(Long id, String name, String surname,
+    public UserPrincipal(Long id, String name,
                          String username, String email, String password,
-                         Set<Movie> favorites,Set<Movie> watchList,
+                         String image, Set<Movie> favorites, Set<Movie> watchList,
                          Collection<? extends GrantedAuthority> authorities)
     {
         this.id = id;
         this.name = name;
-        this.surname = surname;
         this.username = username;
+        this.image = image;
         this.email = email;
         this.password = password;
         this.authorities = authorities;
@@ -68,10 +69,10 @@ public class UserPrincipal implements UserDetails
         return new UserPrincipal(
                 user.getId(),
                 user.getName(),
-                user.getSurname(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getPassword(),
+                user.getPicByte(),
                 user.getFavorites(),
                 user.getWatchList(),
                 authorities
@@ -85,8 +86,6 @@ public class UserPrincipal implements UserDetails
     public String getName() {
         return name;
     }
-
-    public String getSurname() { return surname; }
 
     public String getEmail() {
         return email;
@@ -125,6 +124,10 @@ public class UserPrincipal implements UserDetails
     public boolean isCredentialsNonExpired() {
         return true;
     }
+
+    public String getImage() { return image; }
+
+    public void setImage(String image) { this.image = image; }
 
     @Override
     public boolean isEnabled() {

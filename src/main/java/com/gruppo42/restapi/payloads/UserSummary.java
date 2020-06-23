@@ -9,17 +9,17 @@ public class UserSummary
     private Long id;
     private String username;
     private String name;
-    private String surname;
     private String email;
+    private String image;
     private Set<Movie> favorites;
     private Set<Movie> watchList;
 
-    public UserSummary(Long id, String username, String name, String surname, String email, Set<Movie> favorites, Set<Movie> watchList)
+    public UserSummary(Long id, String username, String name, String email, String image, Set<Movie> favorites, Set<Movie> watchList)
     {
         this.id = id;
         this.username = username;
         this.name = name;
-        this.surname = surname;
+        this.image = image;
         this.favorites = favorites;
         this.email = email;
         this.watchList = watchList;
@@ -37,10 +37,6 @@ public class UserSummary
 
     public void setName(String name) { this.name = name; }
 
-    public String getSurname() { return surname; }
-
-    public void setSurname(String surname) { this.surname = surname; }
-
     public Set<Movie> getFavorites() { return favorites; }
 
     public void setFavorites(Set<Movie> favorites) { this.favorites = favorites; }
@@ -52,4 +48,8 @@ public class UserSummary
     public String getEmail() { return email; }
 
     public void setEmail(String email) { this.email = email; }
+
+    public String getImage() { return image; }
+
+    public void setImage(String image) { this.image = image; }
 }

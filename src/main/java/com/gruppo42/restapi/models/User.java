@@ -11,6 +11,7 @@ import javax.validation.constraints.Size;
 import java.util.HashSet;
 import java.util.Set;
 
+
 @Entity
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
@@ -25,22 +26,22 @@ public class User extends DateAudit
     @Column(unique = true)
     private String username;
 
-    @NaturalId
+    @NaturalId(mutable=true)
     @NotBlank
     @Email
     @Size(max = 40)
     private String email;
 
     @NotBlank
-    @Size(min = 4, max = 100)
+    @Size(min = 3, max = 50)
     private String name;
 
     @NotBlank
-    @Size(min = 4, max = 100)
-    private String surname;
-
-    @NotBlank
     private String password;
+
+    @Lob
+    @Column(name = "picByte", length=2147483647)
+    private String picByte;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_roles",
@@ -64,13 +65,13 @@ public class User extends DateAudit
     {
     }
 
-    public User(String name, String surname, String username, String email, String password)
+    public User(String name, String username, String email, String password, String image)
     {
         this.name = name;
-        this.surname = surname;
         this.username = username;
         this.email = email;
         this.password = password;
+        this.picByte = image;
     }
 
     public Long getId()
@@ -113,16 +114,6 @@ public class User extends DateAudit
         this.name = name;
     }
 
-    public String getSurname()
-    {
-        return surname;
-    }
-
-    public void setSurname(String surname)
-    {
-        this.surname = surname;
-    }
-
     public String getPassword()
     {
         return password;
@@ -142,6 +133,10 @@ public class User extends DateAudit
     {
         this.roles = roles;
     }
+
+    public String getPicByte() { return picByte; }
+
+    public void setPicByte(String picByte) { this.picByte = picByte; }
 
     public Set<Movie> getFavorites() { return favorites; }
 
